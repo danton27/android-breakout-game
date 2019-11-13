@@ -18,6 +18,13 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.AdRequest;
+
 import java.io.IOException;
 
 public class BreakoutGame extends Activity {
@@ -26,15 +33,40 @@ public class BreakoutGame extends Activity {
     // It will also hold the logic of the game
     // and respond to screen touches as well
     BreakoutView breakoutView;
+    private InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdClosed() {
+                // Load the next interstitial.
+                mInterstitialAd.loadAd(new AdRequest.Builder().build());
+                breakoutView.createBricksAndRestart();
+            }
+
+        });
+
         // Initialize gameView and set it as the view
         breakoutView = new BreakoutView(this);
         setContentView(breakoutView);
 
+    }
+
+    @Override
+    public void onBackPressed()
+    {
+        mInterstitialAd.show();
     }
 
     // Here is our implementation of BreakoutView
@@ -207,6 +239,10 @@ public class BreakoutGame extends Activity {
 
         }
 
+
+
+
+
         // Everything that needs to be updated goes in here
         // Movement, collision detection etc.
         public void update() {
@@ -242,10 +278,9 @@ public class BreakoutGame extends Activity {
                 // Lose a life
                 lives--;
                 soundPool.play(loseLifeID, 1, 1, 0, 0, 1);
-
                 if (lives == 0) {
                     paused = true;
-                    createBricksAndRestart();
+                    //createBricksAndRestart();
                 }
             }
 
@@ -282,7 +317,8 @@ public class BreakoutGame extends Activity {
 
             {
                 paused = true;
-                createBricksAndRestart();
+                //mInterstitialAd.show();
+                //createBricksAndRestart();
             }
 
         }
@@ -334,6 +370,7 @@ public class BreakoutGame extends Activity {
                 if (lives <= 0) {
                     paint.setTextSize(90);
                     canvas.drawText("YOU HAVE LOST!", 10, screenY / 2, paint);
+                    paused = true;
                 }
 
                 // Draw everything to the screen
